@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cyberpunk Tic Tac Toe</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
+
+    body {
+      background: #0f0f1a;
+      color: #00ffe7;
+      font-family: 'Orbitron', sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+
+    h1 {
+      margin-top: 20px;
+      font-size: 3em;
+      text-shadow: 0 0 10px #0ff;
+    }
+
+    #modeSelect, #levelSelect {
+      margin: 10px;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      gap: 10px;
+      justify-content: center;
+      margin-top: 30px;
+    }
+
+    .cell {
+      width: 100px;
+      height: 100px;
+      background: #1a1a2e;
+      border: 2px solid #00ffe7;
+      font-size: 2.5em;
+      color: #ff00ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .cell:hover {
+      background: #292947;
+    }
+
+    .cyber-btn {
+      background: black;
+      color: #00ffe7;
+      border: 2px solid #00ffe7;
+      padding: 10px 20px;
+      font-size: 1em;
+      cursor: pointer;
+      margin: 10px;
+      text-shadow: 0 0 5px #0ff;
+    }
+
+    #message {
+      margin-top: 20px;
+      font-size: 1.5em;
+    }
+  </style>
+</head>
+<body>
+  <h1>Cyberpunk Tic Tac Toe</h1>
+
+  <select id="modeSelect" class="cyber-btn">
+    <option value="2">2 Players</option>
+    <option value="1">1 Player (vs AI)</option>
+  </select>
+
+  <select id="levelSelect" class="cyber-btn">
+    <option value="easy">Easy</option>
+    <option value="medium">Medium</option>
+    <option value="hard">Hard</option>
+  </select>
+
+  <button class="cyber-btn" onclick="startGame()">Start Game</button>
+
+  <div class="board" id="board"></div>
+
+  <div id="message"></div>
+
+  <script>
+    const boardElement = document.getElementById('board');
+    const messageElement = document.getElementById('message');
+    let board = Array(9).fill('');
+    let currentPlayer = 'X';
+    let gameActive = true;
+    let singlePlayer = false;
+    let aiLevel = 'easy';
+
+    function startGame() {
+      board = Array(9).fill('');
+      currentPlayer = 'X';
+      gameActive = true;
+      singlePlayer = document.getElementById('modeSelect').value === '1';
+      aiLevel = document.getElementById('levelSelect').value;
+      renderBoard();
+      messageElement.textContent = "Player X's Turn";
+    }
+
+    function renderBoard() {
+      boardElement.innerHTML = '';
+      board.forEach((cell, index) => {
+        const cellElement = document.createElement('div');
+        cellElement.classList.add('cell');
+        cellElement.textContent = cell;
+        cellElement.addEventListener('click', () => handleMove(index));
+        boardElement.appendChild(cellElement);
+      });
+    }
+
+    function handleMove(index) {
+      if (!gameActive || board[index]) return;
+
+      board[index] = currentPlayer;
+      renderBoard();
+
+      if (checkWin(currentPlayer)) {
+        messageElement.textContent = `${currentPlayer} Wins!`;
+        gameActive = false;
+        return;
+      }
+
+      if (board.every(cell => cell !== '')) {
+        messageElement.textContent = "It's a draw!";
+        gameActive = false;
+        return;
+      }
+
+      currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+      messageElement.textContent = `Player ${currentPlayer}'s Turn`;
+
+      if (singlePlayer && currentPlayer === 'O') {
+        setTimeout(aiMove, 500);
+      }
+    }
+
+    function aiMove() {
+      let move;
+
+      const empty = board.map((val, i) => val === '' ? i : null).filter(i => i !== null);
+      const winCombos = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+      ];
+
+      if (aiLevel === 'easy') {
+        move = empty[Math.floor(Math.random() * empty.length)];
+      }
+
+      else if (aiLevel === 'medium' || aiLevel === 'hard') {
+        for (let combo of winCombos) {
+          const [a, b, c] = combo;
+          const line = [board[a], board[b], board[c]];
+          if (line.filter(x => x === 'O').length === 2 && line.includes('')) {
+            move = combo[line.indexOf('')];
+            break;
+          }
+        }
+
+        if (move === undefined) {
+          for (let combo of winCombos) {
+            const [a, b, c] = combo;
+            const line = [board[a], board[b], board[c]];
+            if (line.filter(x => x === 'X').length === 2 && line.includes('')) {
+              move = combo[line.indexOf('')];
+              break;
+            }
+          }
+        }
+
+        if (move === undefined && aiLevel === 'medium') {
+          move = empty[Math.floor(Math.random() * empty.length)];
+        }
+
+        if (move === undefined && aiLevel === 'hard' && board[4] === '') {
+          move = 4;
+        }
+
+        if (move === undefined && aiLevel === 'hard') {
+          const corners = [0,2,6,8].filter(i => board[i] === '');
+          if (corners.length > 0) move = corners[0];
+        }
+
+        if (move === undefined) {
+          move = empty[Math.floor(Math.random() * empty.length)];
+        }
+      }
+
+      handleMove(move);
+    }
+
+    function checkWin(player) {
+      const winPatterns = [
+        [0,1,2], [3,4,5], [6,7,8],
+        [0,3,6], [1,4,7], [2,5,8],
+        [0,4,8], [2,4,6]
+      ];
+      return winPatterns.some(pattern =>
+        pattern.every(index => board[index] === player)
+      );
+    }
+
+    startGame();
+  </script>
+</body>
+</html>
